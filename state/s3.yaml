@@ -139,6 +139,8 @@ Conditions:
   HasCloudFrontReadAccess: !Equals [!Ref Access, CloudFrontRead]
   HasCloudFrontAccessLogWrite: !Equals [!Ref Access, CloudFrontAccessLogWrite]
   HasElbAccessLogWriteAccess: !Equals [!Ref Access, ElbAccessLogWrite]
+  # The only server-side encryption option that's supported is Amazon S3-managed keys (SSE-S3).
+  HasElbAccessLogWriteEncrypted: !And [!Condition HasKmsKey, !Condition HasElbAccessLogWriteAccess]
   HasS3AccessLogWrite: !Equals [!Ref Access, S3AccessLogWrite]
   HasConfigWriteAccess: !Equals [!Ref Access, ConfigWrite]
   HasCloudTrailWriteAccess: !Equals [!Ref Access, CloudTrailWrite]
@@ -293,6 +295,16 @@ Resources:
             Action: 's3:GetBucketAcl'
             Effect: Allow
             Resource: !GetAtt 'Bucket.Arn'
+          - !Ref 'AWS::NoValue'
+        - !If
+          - HasElbAccessLogWriteEncrypted
+          - Principal: '*'
+            Action: 's3:PutObject*'
+            Effect: Deny
+            Resource: !Sub '${Bucket.Arn}/*'
+            Condition:
+              StringNotEquals:
+                's3:x-amz-server-side-encryption': 'AES256' # https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingServerSideEncryption.html
           - !Ref 'AWS::NoValue'
         - !If
           - HasConfigWriteAccess
