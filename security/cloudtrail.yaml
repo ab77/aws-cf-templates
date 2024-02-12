@@ -215,16 +215,18 @@ Resources:
           Condition:
             Bool:
               'aws:SecureTransport': false
-        - Sid: EnforceSSERequests
-          Effect: Deny
-          Principal: '*'
-          Action: 's3:PutObject'
-          Resource: !If [HasLogFilePrefix, !Sub 'arn:aws:s3:::${TrailBucket}/${LogFilePrefix}/AWSLogs/${AWS::AccountId}/*', !Sub 'arn:aws:s3:::${TrailBucket}/AWSLogs/${AWS::AccountId}/*']
-          Condition:
-            StringNotEquals:
-              's3:x-amz-server-side-encryption':
-              - 'AES256'
-              - 'aws:kms'
+        - !If
+          - HasParentKmsKeyStack
+          - Sid: EnforceSSERequests
+            Principal: '*'
+            Action: 's3:PutObject*'
+            Effect: Deny
+            Resource: !If [HasLogFilePrefix, !Sub 'arn:aws:s3:::${TrailBucket}/${LogFilePrefix}/AWSLogs/${AWS::AccountId}/*', !Sub 'arn:aws:s3:::${TrailBucket}/AWSLogs/${AWS::AccountId}/*']
+            Condition:
+              StringNotEquals:
+                's3:x-amz-server-side-encryption': ''
+                's3:x-amz-server-side-encryption-aws-kms-key-id': {'Fn::ImportValue': !Sub '${ParentKmsKeyStack}-KeyArn'}
+          - !Ref 'AWS::NoValue'
   TrailLogGroup:
     Type: 'AWS::Logs::LogGroup'
     Properties:
