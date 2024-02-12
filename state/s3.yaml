@@ -216,7 +216,9 @@ Resources:
             Resource: !Sub '${Bucket.Arn}/*'
             Condition:
               StringNotEquals:
-                's3:x-amz-server-side-encryption': ''
+                's3:x-amz-server-side-encryption': [
+                - 'AES256'
+                - 'aws:kms'
                 's3:x-amz-server-side-encryption-aws-kms-key-id': {'Fn::ImportValue': !Sub '${ParentKmsKeyStack}-KeyArn'}
           - !Ref 'AWS::NoValue'
         - !If
